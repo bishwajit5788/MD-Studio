@@ -21,6 +21,20 @@ backend/downloads/*
 *.opus
 *.webm
 
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+frontend/out/
+*.tsbuildinfo
+.vercel/
+frontend/.vercel/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
 
 # PlatformIO & Embedded
 .pio/

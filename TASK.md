@@ -10,9 +10,9 @@
 - [x] Implement on-board hardware diagnostic self-test suite (`hardware_diagnostics.cpp` & `[env:diagnostics]`). *(Verified in firmware source tree)*
 - [x] Implement uncompressed hardware test tone generators for bench frequency sweeps (`tools/generate_test_tones.py`). *(Verified via automated script)*
 - [x] Implement MicroSD card FAT32 validator & throughput benchmark tool (`tools/sd_card_verifier.py`). *(Verified via CLI test)*
-- [ ] **Physical bench verification:** Perform multimeter tests on battery connector pins against PCB silkscreen (`RULE_POLARITY_CHECK`). *[Physical Bench Pending]*
-- [ ] **Physical bench verification:** Wire dual 8Ω micro-speakers via JST-PH 2.0 headers and run on-board tone check sweep. *[Physical Bench Pending]*
-- [ ] **Physical bench verification:** Insert physical <=32GB FAT32 MicroSD card and verify on-board mount via TCA9554 EXIO3 CS. *[Physical Bench Pending]*
+- [ ] **Physical bench verification (TEST-HW-01):** Perform multimeter tests on battery connector pins against PCB silkscreen (`RULE_POLARITY_CHECK`). *(See [docs/HARDWARE_VALIDATION_GATES.md](docs/HARDWARE_VALIDATION_GATES.md)) — [Status: PENDING]*
+- [ ] **Physical bench verification (TEST-HW-02):** Wire dual 8Ω micro-speakers via JST-PH 2.0 headers and run on-board tone check sweep. *(See [docs/HARDWARE_VALIDATION_GATES.md](docs/HARDWARE_VALIDATION_GATES.md)) — [Status: PENDING]*
+- [ ] **Physical bench verification (TEST-HW-03):** Insert physical <=32GB FAT32 MicroSD card and verify on-board mount via TCA9554 EXIO3 CS. *(See [docs/HARDWARE_VALIDATION_GATES.md](docs/HARDWARE_VALIDATION_GATES.md)) — [Status: PENDING]*
 
 ### PHASE 3: Memory-Safe Firmware Synthesis
 - [x] Reconcile authoritative Waveshare ESP32-S3-Touch-LCD-1.85 original pin mapping (LCD, SD, PCM5101, I2C). *(Verified via tools/audit_pin_mappings.py)*
@@ -20,7 +20,7 @@
 - [x] Implement real finite state machine (`state_machine.h`) enforcing transition lifecycle: `ACTIVE_A -> mute -> stop -> destroy -> free -> clear pointers -> verify resources -> ACTIVE_B`. *(Verified in audio_manager.cpp)*
 - [x] Build TCA9554 IO expander driver controlling MicroSD CS on EXIO3 (`tca9554.cpp` & `sd_manager.cpp`). *(Verified in firmware codebase)*
 - [x] Implement deterministic hardware PCM/I2S test path and <=65% volume ceiling enforcement (`RULE_VOLUME_CEILING`). *(Verified in audio_manager.cpp)*
-- [ ] **Physical bench verification:** Run continuous start/stop playback cycles on physical ESP32-S3 hardware to record internal heap and PSRAM stability. *[Physical Bench Pending]*
+- [ ] **Physical bench verification (TEST-HW-04):** Run continuous start/stop playback cycles on physical ESP32-S3 hardware to record internal heap and PSRAM stability across repeated decoder lifecycles. *(See [docs/HARDWARE_VALIDATION_GATES.md](docs/HARDWARE_VALIDATION_GATES.md)) — [Status: PENDING]*
 
 ### PHASE 4: Visual Interface & Enclosure Design
 - [x] Integrate LVGL 8.3 geometry loops for 360x360 ST77916 circular LCD with PSRAM framebuffers. *(Verified in display_manager.cpp)*
@@ -64,3 +64,30 @@
 - [x] Provide production Dockerfile and `docker-compose.yml` for persistent extraction worker with BgUtils POT daemon and Node.js challenge solver. *(Verified)*
 - [x] Update frontend dashboard (`index.html`) with dynamic worker connection status badges. *(Verified live on Vercel)*
 - [x] Update GitHub Actions CI with `workflow_dispatch` opt-in live YouTube extraction test. *(Verified in .github/workflows/ci.yml)*
+
+### PHASE 9: MoodAudio Studio Full-Stack Audio Workstation & EchoNode Hardware Compatibility Contract
+- [x] Full-Stack Next.js 16 + React 19 + TypeScript audio workstation interface (`frontend/`) with dark-first DAW aesthetic (`#090c14`), light theme persistence, and zero decorative mockups. *(Verified via npm run build)*
+- [x] Phase 1 Audio Extraction & Pre-Restoration Analysis Engine (`backend/app/services/audio_analyzer.py`): True Peak (`dBTP`), Max Peak (`dBFS`), RMS (`dBFS`), EBU R128 LUFS, Loudness Range (`LU`), DC offset, stereo imbalance, clipping detection, and 100-point normalized waveform peak envelopes. *(Verified via test_moodaudio_v1.py)*
+- [x] 4 Differentiated Audio Processing Modes (`backend/app/services/audio_restorer.py`):
+  - [x] Dolby Atmos: Strictly disabled (`enabled: false`, "Coming soon — compatible Atmos authoring workflow not yet validated") preventing deceptive multichannel/ADM renaming. *(Verified in capabilities and restorer)*
+  - [x] Immersive Audio: Open-source binaural spatial DSP rendering (ITD, crossfeed, early room reflection simulation) with Subtle, Moderate, Wide intensity. *(Verified in test_moodaudio_v1.py)*
+  - [x] Stereo Sound: Bit-perfect stream preservation / conservative mastering (<20Hz DC highpass, -1.0 dBTP true-peak ceiling). *(Verified in test_moodaudio_v1.py)*
+  - [x] Audio Enhancer: Adaptive content-aware speech clarity vs music warmth restoration. *(Verified in test_moodaudio_v1.py)*
+- [x] Fair A/B Preview Player with Matched Loudness: Dual original vs. processed audio playback normalized to -16 LUFS via EBU R128 to eliminate psychoacoustic volume bias. *(Verified in audio_restorer.py & frontend)*
+- [x] Phase 5 Automated Quality Assurance Gate (`backend/app/services/audio_validator.py`): Automated media verification (format container, duration tolerance, decodability, zero clipping, non-silence) gating download controls. *(Verified via test_moodaudio_v1.py)*
+- [x] EchoNode Bedside Hardware Device Compatibility Contract (`backend/app/models.py` & `audio_validator.py`):
+  - [x] Strict validation of exactly zero video tracks (preventing ESP32-S3 I2S decoder panics). *(Verified)*
+  - [x] Validation of supported codecs (`aac` in M4A, `mp3`, `pcm_s16le` in WAV) matching ESP32-audioI2S firmware decoder. *(Verified)*
+  - [x] Sample rate verification (22050, 32000, 44100, 48000 Hz) matching PCM5101 I2S PLL lock range. *(Verified)*
+  - [x] Stereo / mono DAC channel count verification (rejecting multichannel 5.1/7.1 for hardware DAC). *(Verified)*
+  - [x] FAT32 filename compliance ($\le 60$ characters base length, safe ASCII characters). *(Verified)*
+  - [x] File size safety boundary ($\le 60$ MB to avoid FAT32 SPI cluster exhaustion). *(Verified)*
+  - [x] Explicit fulfillment contract: manual MicroSD transfer marked active/verified; USB Mass Storage and local network sync marked as planned capabilities. *(Verified in UI & API response)*
+- [x] Unified PostgreSQL & SQLite Persistence (`backend/app/services/database.py`): Dynamic backend support for Railway PostgreSQL and local SQLite with UUID keys, audit timestamps, and retry/cancel state transitions. *(Verified via test_moodaudio_v1.py)*
+- [x] Containerization & CI/CD: Multi-stage Next.js `Dockerfile`, Railway `backend/railway.toml`, Vercel `frontend/vercel.json`, complete `docker-compose.yml`, and updated GitHub Actions CI running 62 backend tests, hardware pinout checks, partition boundary checks, and Next.js production builds. *(Verified)*
+- [ ] **Physical bench verification gates (Awaiting physical lab equipment — see [docs/HARDWARE_VALIDATION_GATES.md](docs/HARDWARE_VALIDATION_GATES.md)):**
+  - [ ] **TEST-HW-01 (Battery Connector Polarity):** Multimeter polarity check on MX1.25 port against PCB silkscreen (`RULE_POLARITY_CHECK`). *[Status: PENDING]*
+  - [ ] **TEST-HW-02 (Dual Speaker Tone Sweep):** Connect dual 8Ω micro-speakers via JST-PH 2.0 headers and run `[env:diagnostics]` sweep. *[Status: PENDING]*
+  - [ ] **TEST-HW-03 (MicroSD Mount via TCA9554):** Insert physical <=32GB FAT32 MicroSD card and verify `EXIO3` CS mount at 20MHz. *[Status: PENDING]*
+  - [ ] **TEST-HW-04 (Repeated Playback Lifecycle & Memory Stability):** 50-cycle start/stop stress test verifying zero cumulative heap/PSRAM leak. *[Status: PENDING]*
+

@@ -3,12 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from .config import settings
-from .api.routes import router, get_worker_url, check_worker_health
+from .api.routes import router as legacy_router, get_worker_url, check_worker_health
+from .api.v1.routes import router as v1_router
 
 app = FastAPI(
-    title=settings.app_name,
+    title=settings.product_name,
     version=settings.version,
-    description="Bedside Audio Device Ingestion Web Service - Extracts video-free M4A audio streams for ESP32-S3 playback."
+    description="Professional Audio Extraction, Restoration & Spatial Processing Platform (MoodAudio Studio)"
 )
 
 @app.exception_handler(HTTPException)
@@ -29,8 +30,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount API router
-app.include_router(router)
+# Mount API routers (both v1 and legacy for backward compatibility)
+app.include_router(v1_router, prefix="/api")
+app.include_router(legacy_router)
 
 # Serve static web dashboard
 if settings.static_dir.exists():

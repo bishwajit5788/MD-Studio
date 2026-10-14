@@ -113,11 +113,11 @@ class S3StorageService(StorageService):
     Returns persistent public/signed URLs for completed tracks.
     """
     def __init__(self):
-        self.bucket_name = os.environ.get("S3_BUCKET_NAME", "echonode-audio")
-        self.endpoint_url = os.environ.get("S3_ENDPOINT_URL")
-        self.access_key = os.environ.get("S3_ACCESS_KEY_ID")
-        self.secret_key = os.environ.get("S3_SECRET_ACCESS_KEY")
-        self.region = os.environ.get("S3_REGION_NAME", "auto")
+        self.bucket_name = os.environ.get("STORAGE_BUCKET") or os.environ.get("S3_BUCKET_NAME", "echonode-audio")
+        self.endpoint_url = os.environ.get("STORAGE_ENDPOINT") or os.environ.get("S3_ENDPOINT_URL")
+        self.access_key = os.environ.get("STORAGE_ACCESS_KEY_ID") or os.environ.get("S3_ACCESS_KEY_ID")
+        self.secret_key = os.environ.get("STORAGE_SECRET_ACCESS_KEY") or os.environ.get("S3_SECRET_ACCESS_KEY")
+        self.region = os.environ.get("STORAGE_REGION") or os.environ.get("S3_REGION_NAME", "auto")
         self.public_url_prefix = os.environ.get("STORAGE_PUBLIC_URL_PREFIX")
 
         # Fallback local cache

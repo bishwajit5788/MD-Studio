@@ -27,10 +27,14 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
+      - name: Install system FFmpeg
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt
+          pip install -r backend/requirements.txt pytest httpx
 
       - name: Authoritative Pinout & Dependency Audit
         run: |
@@ -61,8 +65,14 @@ jobs:
           python backend/tests/test_phase7_verification.py
 
       - name: Run All 22 Mandatory Requirements Verification
+        env:
+          ECHONODE_WORKER_TOKEN: "development-insecure-token-change-in-production"
         run: |
           python backend/tests/test_all_22_requirements.py
+
+      - name: Run MoodAudio Studio v1 Service & API Suite
+        run: |
+          pytest -v backend/tests
 
       - name: Run Audio Tone Generator
         run: |
@@ -71,6 +81,26 @@ jobs:
       - name: Test MicroSD Validator CLI
         run: |
           python tools/sd_card_verifier.py --help
+
+  frontend-build:
+    name: Next.js Frontend Verification & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Verify TypeScript & Build Next.js Production Bundle
+        working-directory: frontend
+        run: npm run build
 
   firmware-syntax-check:
     name: Firmware PlatformIO Build Verification

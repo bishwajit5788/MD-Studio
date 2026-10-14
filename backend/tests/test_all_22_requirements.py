@@ -247,6 +247,7 @@ class TestAll22Requirements(unittest.IsolatedAsyncioTestCase):
     # 14. Worker unavailable behavior (503)
     def test_14_worker_unavailable_behavior(self):
         os.environ["WORKER_URL"] = "http://127.0.0.1:59999"
+        os.environ["ECHONODE_WORKER_TOKEN"] = "test-token"
         with self.assertRaises(HTTPException) as ctx:
             proxy_to_worker("GET", "/api/jobs")
         self.assertEqual(ctx.exception.status_code, 503)
@@ -269,6 +270,7 @@ class TestAll22Requirements(unittest.IsolatedAsyncioTestCase):
     @patch("urllib.request.urlopen")
     def test_16_configured_worker_behavior(self, mock_urlopen):
         os.environ["WORKER_URL"] = "http://mock-worker:8001"
+        os.environ["ECHONODE_WORKER_TOKEN"] = "test-token"
         mock_resp = MagicMock()
         mock_resp.read.return_value = b'{"job_id": "remote-123", "status": "queued", "message": "queued on worker"}'
         mock_urlopen.return_value.__enter__.return_value = mock_resp

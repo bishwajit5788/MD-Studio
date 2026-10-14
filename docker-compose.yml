@@ -1,42 +1,82 @@
 version: "3.8"
 
 services:
-  # EchoNode persistent audio extraction engine with FFmpeg & yt-dlp
-  echonode-worker:
+  # 1. Next.js Professional Workstation Frontend
+  moodaudio-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: moodaudio-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - BACKEND_INTERNAL_URL=http://moodaudio-api:8000
+    depends_on:
+      - moodaudio-api
+
+  # 2. MoodAudio FastAPI Backend & Audio Processing Engine
+  moodaudio-api:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: echonode-worker
+    container_name: moodaudio-api
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    environment:
+      - PRODUCT_NAME=MoodAudio Studio
+      - APP_ENV=production
+      - HOST=0.0.0.0
+      - PORT=8000
+      - FRONTEND_ORIGIN=http://localhost:3000
+      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/moodaudio
+      - STORAGE_BACKEND=local
+      - DOWNLOADS_DIR=/app/downloads
+      - BGUTIL_BASE_URL=http://bgutil-provider:4416
+      - EXTRACTION_MODE=local
+      - MAX_UPLOAD_SIZE_MB=100
+      - MAX_AUDIO_DURATION_SECONDS=3600
+      - JOB_TIMEOUT_SECONDS=600
+    volumes:
+      - moodaudio-downloads:/app/downloads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      bgutil-provider:
+        condition: service_started
+
+  # 3. Persistent PostgreSQL Database (Railway Compatible)
+  postgres:
+    image: postgres:16-alpine
+    container_name: moodaudio-postgres
     restart: unless-stopped
     ports:
-      - "8001:8001"
+      - "5432:5432"
     environment:
-      - WORKER_HOST=0.0.0.0
-      - WORKER_PORT=8001
-      - EXTRACTION_MODE=local
-      - BGUTIL_BASE_URL=http://bgutil-provider:4416
-      - STORAGE_BACKEND=local
-      # Pass cookies via environment secret if datacenter IP is flagged
-      # - YTDLP_COOKIES=${YTDLP_COOKIES:-}
-      # Configure S3/R2 storage if desired
-      # - STORAGE_BACKEND=s3
-      # - S3_BUCKET_NAME=echonode-audio
-      # - S3_ENDPOINT_URL=https://<account-id>.r2.cloudflarestorage.com
-      # - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-}
-      # - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-}
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_password
+      - POSTGRES_DB=moodaudio
     volumes:
-      - echonode-downloads:/app/downloads
-    depends_on:
-      - bgutil-provider
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d moodaudio"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  # Official BgUtils PO Token Provider HTTP server (Node/BotGuard attestation)
+  # 4. BgUtils PO Token Provider (Node.js runtime for YouTube BotGuard attestation)
   bgutil-provider:
     image: brainicism/bgutil-ytdlp-pot-provider:latest
-    container_name: echonode-bgutil-provider
+    container_name: moodaudio-bgutil-provider
     restart: unless-stopped
     ports:
       - "127.0.0.1:4416:4416"
 
 volumes:
-  echonode-downloads:
+  moodaudio-downloads:
+    driver: local
+  postgres-data:
     driver: local
